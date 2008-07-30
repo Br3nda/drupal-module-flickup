@@ -1,5 +1,5 @@
-; $Id: flickrup.info,v 1.1 2007/10/25 11:20:11 jareyero Exp $
+; $Id: flickrup.info,v 1.1.2.1 2008/07/30 20:19:24 diggersf Exp $
 name = Flickr Upload
 description = Flickr uploading API and forms.
-dependencies = flickr 
+dependencies = flickr flickrfield
 package = Flickr

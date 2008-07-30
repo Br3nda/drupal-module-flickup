@@ -49,6 +49,13 @@ function flickrup_menu($may_cache) {
       'type' => MENU_NORMAL_ITEM,
       'description' => t('Change settings for the flickr upload module.')
     );
+    $items[] = array(
+      'path' => 'flickrup/js',
+      'callback' => 'flickrup_js',
+      'access' => user_access('upload photos to all nodes') || user_access('upload photos to own nodes'),
+      'type' => MENU_CALLBACK,
+    );
+    
     // Testing
     /*
     $items[] = array(
@@ -100,6 +107,12 @@ function flickrup_admin_settings() {
     '#default_value' => variable_get('flickr_global_tag', ''),
     '#description' => t('Enter space separated global tags to apply to all the uploads from this site.'),
   );
+  $form['flickrup_remove'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Delete photos from Flickr when they are removed from a node'),
+    '#default_value' => variable_get('flickrup_remove', ''),
+  );
+  
   // Upload options
   $form['upload'] = array('#type' => 'fieldset', '#title' => t('Upload options'));
   $form['upload']['flickr_upload_fields'] = array(
@@ -161,6 +174,19 @@ function flickrup_perm() {
  * Implementation of hook_form_alter()
  */
 function flickrup_form_alter($form_id, &$form) {
+  if (isset($form['type'])) {
+    if ($form['type']['#value'] .'_node_form' == $form_id) {
+      $type = content_types($form['type']['#value']);
+      foreach ($type['fields'] as $name => $field) {
+        if ($field['type'] == 'flickrfield' && $field['widget']['type'] == 'flickrup') {
+          drupal_add_js('misc/progress.js');
+          drupal_add_js('misc/upload.js');
+          $form['#attributes']['enctype'] = 'multipart/form-data';
+        }
+      }    
+    }
+  }
+  
   if ($form_id == 'node_type_form' && isset($form['identity']['type'])) {
     $type = $form['#node_type']->type;
     
@@ -516,7 +542,7 @@ function flickrup_validate_picture($file, $field = 'upload') {
   }
 
   if (!$error) {
-    if ($file = file_save_upload($file, variable_get('flickr_picture_path', 'flickr').'/'.$file->filename, 1)) {
+    if ($file = file_save_upload($file, variable_get('flickr_picture_path', 'flickr').'/'.$file->filename, FILE_EXISTS_RENAME)) {
       $form_values['files'][$field] = $file;
       // Store in session until it has been uploaded to flickr
       $_SESSION['flickr_upload'][$field] = $file;
@@ -602,7 +628,7 @@ function flickrup_node_tags($node, $display = FALSE) {
 /**
  * Actually upload photo to flickr
  */
-function flickrup_upload($path, $title, $tags, $description = '') {
+function flickrup_upload($path, $title = '', $tags = array(), $description = '') {
   static $flickr; // Static caching for the flickr object to support multiple uploads
   
   if (!isset($flickr)) {
@@ -613,7 +639,9 @@ function flickrup_upload($path, $title, $tags, $description = '') {
   }
 
   // Prepare tag string
-  $tagstring = implode(' ', $tags);
+  if (is_array($tags) && !empty($tags)) {
+    $tagstring = implode(' ', $tags);
+  }
   
   // Do sync or async uploading depending on options
   if ($async = variable_get('flickr_upload_async', 0)) {
@@ -717,4 +745,284 @@ function flickrup_cleanstring($string) {
   $output = drupal_substr($output, 0, $maxlength);
 
   return $output;
+}
+
+/**
+ * Implementation of hook_widget_info().
+ */
+function flickrup_widget_info() {
+  return array(
+    'flickrup' => array(
+      'label' => 'Flickr Upload',
+      'field types' => array('flickrfield'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_widget().
+ */
+function flickrup_widget($op, &$node, $field, &$items) {
+  static $submitted; // Work around for 'process form values' being called twice.
+
+  switch ($op) {
+    case 'prepare form values':
+      _flickrup_prepare($node, $field, $items);
+      break;
+    case 'form':
+      return _flickup_widget_form($node, $field, $items);
+    case 'validate':
+      break;
+    case 'submit':
+      $submitted = TRUE; // Work around for 'process form values' being called twice.
+      break;
+    case 'process form values':
+      if ($submitted) {
+        _flickrup_process($node, $field, $items);
+      }
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_widget_settings().
+ */
+function flickrup_widget_settings($op, $widget) {
+  switch ($op) {
+    case 'form':
+      $form['tags'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Tags'),
+        '#description' => t('These tags will be assigned to photos uploaded using this field. Separate by spaces. This will only apply to future uploads.'),
+        '#size' => 40,
+        '#maxlength' => 255,
+        '#default_value' => $widget['tags'],
+      );
+      return $form;
+    case 'save':
+      return array('tags');
+  }
+}
+
+function _flickup_widget_form($node, $field, $items) {
+  require_once(drupal_get_path('module', 'flickr') .'/flickr.inc');
+  $form['flickrup'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Flickr upload'),
+    '#collapsible' => TRUE,
+    '#description' => t('Changes are not permanent until you save this post. Maximum dimensions are %dimensions and the maximum size is %size kB.', array('%dimensions' => variable_get('flickr_picture_dimensions', '800x600'), '%size' => variable_get('flickr_picture_file_size', '1000')))
+  );
+  
+  $form['flickrup']['fieldname'] = array(
+    '#type' => 'hidden',
+    '#value' => $field['field_name'],
+    '#name' => 'flickrup-fieldname',
+    '#id' => 'flickrup-fieldname',
+  );
+  
+  // Wrapper for fieldset contents (used by upload JS).
+  $form['flickrup']['wrapper'] = array(
+    '#prefix' => '<div id="flickrup-wrapper">',
+    '#suffix' => '</div>',
+  );
+  
+  $form['flickrup']['wrapper'] += _flickrup_form($node, $field, $items);
+  
+  return $form;
+}
+
+function _flickrup_form($node, $field = NULL, $items = array()) {
+  $form['#theme'] = 'flickrup_form_new';
+
+  if (count($items)) {
+    $form[$field['field_name']]['#theme'] = 'flickrup_form_current';
+    $form[$field['field_name']]['#tree'] = TRUE;
+    foreach ($items as $key => $item) {
+      $preview = $title = '';
+      if ($item['type'] == 'photo_id') {
+        // Remove photos that weren't found on flickr
+        if (!$photo = flickr_photo_get_info($item['id'])) {
+          unset($items[$key]);
+          break;
+        }
+        $item['title'] = $photo['title']['_content'];
+        $item['preview'] = flickr_img($photo, 's');
+        $form[$field['field_name']][$key]['flickr_photo'] = array('#type' => 'value', '#value' => $photo);
+        $form[$field['field_name']][$key]['id'] = array('#type' => 'value', '#value' => $item['id']);
+      }
+      elseif (is_object($item['file'])) {
+        $item['title'] = basename($item['file']->filename);
+        $item['preview'] = theme('image', $item['file']->filepath, '', '', array('height' => 75, 'width' => 75), FALSE);
+        $form[$field['field_name']][$key]['file'] = array('#type' => 'value', '#value' => $item['file']);
+        
+      }
+      $form[$field['field_name']][$key]['type'] = array('#type' => 'value', '#value' => 'photo_id');
+      $form[$field['field_name']][$key]['nsid'] = array('#type' => 'value', '#value' => variable_get('flickr_default_userid', ''));
+      $form[$field['field_name']][$key]['preview'] = array(
+        '#type' => 'item',
+        '#value' => $item['preview'],
+      );
+      $form[$field['field_name']][$key]['remove'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => $item['remove'],
+      );
+      
+      $form[$field['field_name']][$key]['title'] = array(
+        '#type' => 'textfield',
+        '#description' => t('Link to flickr photo?'),
+        '#size' => 40,
+        '#maxlength' => 255,
+        '#default_value' => $item['title'],
+      );
+    }
+  }
+  
+  $form['new'] = array(
+    '#prefix' => '<div id="flickrup-hide">',
+    '#suffix' => '</div>',
+  );
+  $form['new']['flickrfile'] = array(
+    '#title' => t('Upload new image'),
+    '#type' => 'file', 
+    '#size' => 48, 
+  );
+  $form['new']['flickrup'] = array(
+    '#type' => 'button', 
+    '#value' => t('Upload'),
+    '#name' => 'flickrup',
+    '#id' => 'flickrup-button',
+  );
+  
+  $form['flickrup-url'] = array('#type' => 'hidden', '#value' => url('flickrup/js', NULL, NULL, TRUE), '#attributes' => array('class' => 'upload'));
+  
+  $form['current']['vid'] = array('#type' => 'hidden', '#value' => $node->vid);
+  
+  return $form;
+}
+
+/**
+ * Theme the attachment form.
+ * Note: required to output prefix/suffix.
+ */
+function theme_flickrup_form_new($form) {
+  $output = drupal_render($form);
+  return $output;
+}
+
+/**
+ * Theme current photos.
+ */
+function theme_flickrup_form_current($form) {
+  $header = array(t('Preview'), t('Remove'), t('Title'));
+  
+  foreach (element_children($form) as $key) {
+    $row = array();
+    $row[] = drupal_render($form[$key]['preview']);
+    $row[] = drupal_render($form[$key]['remove']);
+    $row[] = drupal_render($form[$key]['title']);
+    $rows[] = $row;
+  }
+  $output = theme('table', $header, $rows);
+  $output .= drupal_render($form);
+  return $output;
+}
+
+/**
+ * Save new uploads and attach them to the node object.
+ * append flickrup_previews to the node object as well.
+ */
+function _flickrup_prepare(&$node, $field, &$items) {
+  $fieldname = $field['field_name'];
+  // Clear session variable and files that were leftover from previous uploading session
+  if(count($_POST) == 0) {
+    if (is_array($_SESSION['flickrup_previews']) && count($_SESSION['flickrup_previews'])) {
+      foreach ($_SESSION['flickrup_previews'] as $file) {
+        file_delete($file->filepath);
+      }
+      unset($_SESSION['flickrup_previews']);
+    }
+  }
+  
+  if (($file = file_check_upload('flickrfile')) && user_access('upload photos to all nodes')) {
+    $key = 'flickrup_'. count($_SESSION['flickrup_previews']);
+    $file->fid = $key;
+    flickrup_validate_picture($file, 'flickrfile');
+    $_SESSION['flickrup_previews'][$key] = $file;
+  }
+  
+  // Attach previews to node
+  if (is_array($_SESSION['flickrup_previews']) && count($_SESSION['flickrup_previews'])) {
+    foreach ($_SESSION['flickrup_previews'] as $fid => $file) {
+      if ($user->uid != 1) {
+        // Here something.php.pps becomes something.php_.pps
+        $file->filename = upload_munge_filename($file->filename, NULL, 0);
+        $file->description = $file->filename;
+      }
+      $node->{$fieldname}[$fid] = $file;
+      $items[]['file'] = $file;
+    }
+  }
+}
+
+function _flickrup_process(&$node, $field, &$items) {
+  $fieldname = $field['field_name'];
+
+  foreach ($items as $delta => $item) {
+    
+    // Remove empty items
+    if ($item['remove'] || (!$item['id'] && !is_object($item['file']))) {
+      if (variable_get('flickrup_remove', '')) {
+        $flickr = flickrup_flickrapi();
+        $flickr->photos_delete($item['id']);
+      }
+      unset($items[$delta]);
+    }
+    
+    // Process new files
+    if (is_object($item['file'])) {
+      // Tags
+      $global_tags = explode(' ', variable_get('flickr_global_tag', ''));
+      $field_tags = explode(' ', $field['widget']['tags']);
+      $tags = array_merge($global_tags, $field_tags);
+      $result = flickrup_upload($item['file']->filepath, $item['title'], $tags);
+      $items[$delta]['id'] = $result;
+    }
+    else {
+      if ($item['title'] != $item['flickr_photo']['title']['_content']) {
+        $flickr = flickrup_flickrapi();
+        $flickr->photos_setMeta($item['id'], $item['title'], $item['flickr_photo']['description']['_content']);
+      }
+    }
+  }
+}
+
+function flickrup_js() {
+  $node = $_POST;
+  $field = content_fields($node['flickrup-fieldname']);
+  $fieldname = $field['field_name'];
+  $node = (object)$node;
+  
+  // Load node to get existing photos
+  $node = node_load(array('vid' => $node->vid));
+
+  $items = $node->$fieldname;
+  _flickrup_prepare($node, $field, $items);
+  
+  $form = _flickrup_form($node, $field, $items);
+  $form = form_builder('flickrup_js', $form);
+  $output .= theme('status_messages') . drupal_render($form);
+  print drupal_to_js(array('status' => TRUE, 'data' => $output));
+  exit;
+}
+
+function flickrup_flickrapi() {
+  static $flickr;
+  require_once drupal_get_path('module', 'flickrup').'/phpFlickr/phpFlickr.php';
+
+  if (!$flickr) {
+    $flickr = new phpFlickr(trim(variable_get('flickr_api_key', '')), trim(variable_get('flickr_api_secret', '')));
+    $flickr->setToken(trim(variable_get('flickr_api_token', '')));
+  }
+  
+  return $flickr;
 }
