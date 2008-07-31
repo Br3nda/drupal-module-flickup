@@ -953,11 +953,6 @@ function _flickrup_prepare(&$node, $field, &$items) {
   // Attach previews to node
   if (is_array($_SESSION['flickrup_previews']) && count($_SESSION['flickrup_previews'])) {
     foreach ($_SESSION['flickrup_previews'] as $fid => $file) {
-      if ($user->uid != 1) {
-        // Here something.php.pps becomes something.php_.pps
-        $file->filename = upload_munge_filename($file->filename, NULL, 0);
-        $file->description = $file->filename;
-      }
       $node->{$fieldname}[$fid] = $file;
       $items[]['file'] = $file;
     }
