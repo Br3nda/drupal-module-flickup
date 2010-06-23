@@ -15,8 +15,8 @@
 /**
  * Implementation of hook_help()
  */
-function flickrup_help($section) {
-  switch ($section) {
+function flickrup_help($path, $arg) {
+  switch ($path) {
     case 'admin/help#flickrup':
       $output = '<p>'.t('Flickr Upload module features:').'</p><ul>';
       $output .= '<li>'.t('Allows uploading images to Flickr from your site.').'</li>';
