@@ -94,6 +94,10 @@ function flickrup_menu() {
   return $items;
 }
 
+function flickrup_node_view_access() {
+  return user_access('upload photos to all nodes') || ($node->uid == $user->uid && user_access('upload photos to own nodes'));
+}
+
 /**
  * Menu/form callback. Settings form
  */
