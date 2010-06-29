@@ -15,14 +15,18 @@
 /**
  * Implementation of hook_help()
  */
-function flickrup_help($section) {
-  switch ($section) {
+function flickrup_help($path, $arg) {
+  switch ($path) {
     case 'admin/help#flickrup':
       $output = '<p>'.t('Flickr Upload module features:').'</p><ul>';
+
+      
       $output .= '<li>'.t('Allows uploading images to Flickr from your site.').'</li>';
       $output .= '<li>'.t('Images can be linked to nodes using per content type settings.').'</li>';
       $ouptut .= '<li>'.t('Tags can be configured globally or using node parameters.').'</li>';
       $output .= '</ul>';
+
+      
       $output .= '<p>'.t('The images are uploaded first to the web server, then from there to your Flickr account. This may have some important performance impact on the web server, so please review carefully the module settings for production servers.').'</p>';
       $output .= '<p><small>'.t('This module uses <a href="http://phpflickr.com/">phpFlickr</a> to interact with the Flickr API.').'</small></p>';
       return $output;
@@ -36,57 +40,66 @@ function flickrup_help($section) {
 /**
  * Implementation of hook_menu().
  */
-function flickrup_menu($may_cache) {
+function flickrup_menu() {
   global $user;
   
   $items = array();
-  if ($may_cache) {
-    $items[] = array(
-      'path' => 'admin/settings/flickrup', 'title' => t('Flickr Uploading'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('flickrup_admin_settings'),
-      'access' => user_access('administer site configuration'),
-      'type' => MENU_NORMAL_ITEM,
-      'description' => t('Change settings for the flickr upload module.')
-    );
-    $items[] = array(
-      'path' => 'flickrup/js',
-      'callback' => 'flickrup_js',
-      'access' => user_access('upload photos to all nodes') || user_access('upload photos to own nodes'),
-      'type' => MENU_CALLBACK,
+  $items['admin/settings/flickrup'] = array(
+    'title' => 'Flickr Uploading',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('flickrup_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'description' => 'Change settings for the flickr upload module.'
+  );
+  $items['flickrup/js'] = array(
+    'paeg callback' => 'flickrup_js',
+    'access arguments' => array('upload photos to all nodes', 'upload photos to own nodes'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // Testing
+  /*
+  $items[] = array(
+    'path' => 'flickr/upload',
+    'title' => t('Upload to Flickr'),
+    'callback' => 'flickrup_page_upload',
+    'access' => user_access('upload photos to nodes'),
+  );
+  */
+
+  // Upload to nodes
+  
+//   if (arg(0) == 'node' && is_numeric(arg(1)) && ($node = node_load(arg(1))) && variable_get('flickr_upload_type_'.$node->type, 0)) {
+    $items['node/%/flickr'] = array(
+//     'path' => 'node/'. arg(1) .'/flickr',
+      'title' => 'Upload photos',
+      'page callback' => 'flickrup_page_node_upload',
+      'page arguments' => array(1),
+      'access callback' => 'flickrup_node_view_access',
+      'weight' => 4,
+      'type' => MENU_LOCAL_TASK
     );
     
-    // Testing
-    /*
-    $items[] = array(
-      'path' => 'flickr/upload',
-      'title' => t('Upload to Flickr'),
-      'callback' => 'flickrup_page_upload',
-      'access' => user_access('upload photos to nodes'),
-    );
-    */
-  } else {
-    // Upload to nodes
-    if (arg(0) == 'node' && is_numeric(arg(1)) && ($node = node_load(arg(1))) && variable_get('flickr_upload_type_'.$node->type, 0)) {
-      $items[] = array('path' => 'node/'. arg(1) .'/flickr', 'title' => t('Upload photos'),
-        'callback' => 'flickrup_page_node_upload',
+    if (variable_get('flickr_node_view', 'tab') == 'tab') {
+      $items['node/%/photos'] = array(
+//       'path' => 'node/'. arg(1) .'/photos',
+        'title' => 'Photos',
+        'callback' => 'flickrup_page_node_view',
         'callback arguments' => array($node),
-        'access' => user_access('upload photos to all nodes') || ($node->uid == $user->uid && user_access('upload photos to own nodes')),
-        'weight' => 4,
+        'access' => user_access('access content'),
+        'weight' => 2,
         'type' => MENU_LOCAL_TASK
       );
-      if (variable_get('flickr_node_view', 'tab') == 'tab') {
-        $items[] = array('path' => 'node/'. arg(1) .'/photos', 'title' => t('Photos'),
-          'callback' => 'flickrup_page_node_view',
-          'callback arguments' => array($node),
-          'access' => user_access('access content'),
-          'weight' => 2,
-          'type' => MENU_LOCAL_TASK
-        );
-      }
     }
-  }
+//   }
+
+
   return $items;
+}
+
+function flickrup_node_view_access() {
+  return user_access('upload photos to all nodes') || ($node->uid == $user->uid && user_access('upload photos to own nodes'));
 }
 
 /**
@@ -146,8 +159,11 @@ function flickrup_admin_settings() {
   
   // Image file settings
   $form['pictures'] = array('#type' => 'fieldset', '#title' => t('Pictures'));
+  
   $form['pictures']['flickr_picture_path'] = array('#type' => 'textfield', '#title' => t('Picture image path'), '#default_value' => variable_get('flickr_picture_path', 'flickr'), '#size' => 30, '#maxlength' => 255, '#description' => t('Subdirectory in the directory %dir where pictures will be stored.', array('%dir' => file_directory_path() .'/')));
+  
   $form['pictures']['flickr_picture_dimensions'] = array('#type' => 'textfield', '#title' => t('Picture maximum dimensions'), '#default_value' => variable_get('flickr_picture_dimensions', '800x600'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum dimensions for pictures, in pixels.'));
+  
   $form['pictures']['flickr_picture_file_size'] = array('#type' => 'textfield', '#title' => t('Picture maximum file size'), '#default_value' => variable_get('flickr_picture_file_size', '1000'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum file size for pictures, in kB.'));
  
   $form['flickr_node_view'] = array(
@@ -319,7 +335,8 @@ function theme_flickrup_node_photos($node, $width = 480, $height = 480) {
 /**
  * Menu callback. Upload photos to node
  */
-function flickrup_page_node_upload($node) {
+function flickrup_page_node_upload($nid) {
+  $node = node_load(array('nid' => $nid));
   drupal_set_title(t('Upload photos for %title', array('%title' => $node->title)));
   $output = '';
   // Get tags for this node type
@@ -496,7 +513,7 @@ function flickrup_upload_form_validate($form_id, $values) {
 
   for($i=1; $i<= variable_get('flickr_upload_fields', 1); $i++) {
     $field = 'upload'.$i;
-    if ($file = file_check_upload($field)) {
+    if ($file = file_save_upload($field)) {
       $upload = TRUE;
       flickrup_validate_picture($file, $field);
     }  
@@ -943,7 +960,7 @@ function _flickrup_prepare(&$node, $field, &$items) {
     }
   }
   
-  if (($file = file_check_upload('flickrfile')) && user_access('upload photos to all nodes')) {
+  if (($file = file_save_upload('flickrfile')) && user_access('upload photos to all nodes')) {
     $key = 'flickrup_'. count($_SESSION['flickrup_previews']);
     $file->fid = $key;
     flickrup_validate_picture($file, 'flickrfile');
