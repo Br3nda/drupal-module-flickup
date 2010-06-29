@@ -19,10 +19,14 @@ function flickrup_help($path, $arg) {
   switch ($path) {
     case 'admin/help#flickrup':
       $output = '<p>'.t('Flickr Upload module features:').'</p><ul>';
+
+      
       $output .= '<li>'.t('Allows uploading images to Flickr from your site.').'</li>';
       $output .= '<li>'.t('Images can be linked to nodes using per content type settings.').'</li>';
       $ouptut .= '<li>'.t('Tags can be configured globally or using node parameters.').'</li>';
       $output .= '</ul>';
+
+      
       $output .= '<p>'.t('The images are uploaded first to the web server, then from there to your Flickr account. This may have some important performance impact on the web server, so please review carefully the module settings for production servers.').'</p>';
       $output .= '<p><small>'.t('This module uses <a href="http://phpflickr.com/">phpFlickr</a> to interact with the Flickr API.').'</small></p>';
       return $output;
@@ -155,8 +159,11 @@ function flickrup_admin_settings() {
   
   // Image file settings
   $form['pictures'] = array('#type' => 'fieldset', '#title' => t('Pictures'));
+  
   $form['pictures']['flickr_picture_path'] = array('#type' => 'textfield', '#title' => t('Picture image path'), '#default_value' => variable_get('flickr_picture_path', 'flickr'), '#size' => 30, '#maxlength' => 255, '#description' => t('Subdirectory in the directory %dir where pictures will be stored.', array('%dir' => file_directory_path() .'/')));
+  
   $form['pictures']['flickr_picture_dimensions'] = array('#type' => 'textfield', '#title' => t('Picture maximum dimensions'), '#default_value' => variable_get('flickr_picture_dimensions', '800x600'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum dimensions for pictures, in pixels.'));
+  
   $form['pictures']['flickr_picture_file_size'] = array('#type' => 'textfield', '#title' => t('Picture maximum file size'), '#default_value' => variable_get('flickr_picture_file_size', '1000'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum file size for pictures, in kB.'));
  
   $form['flickr_node_view'] = array(
@@ -506,7 +513,7 @@ function flickrup_upload_form_validate($form_id, $values) {
 
   for($i=1; $i<= variable_get('flickr_upload_fields', 1); $i++) {
     $field = 'upload'.$i;
-    if ($file = file_check_upload($field)) {
+    if ($file = file_save_upload($field)) {
       $upload = TRUE;
       flickrup_validate_picture($file, $field);
     }  
@@ -953,7 +960,7 @@ function _flickrup_prepare(&$node, $field, &$items) {
     }
   }
   
-  if (($file = file_check_upload('flickrfile')) && user_access('upload photos to all nodes')) {
+  if (($file = file_save_upload('flickrfile')) && user_access('upload photos to all nodes')) {
     $key = 'flickrup_'. count($_SESSION['flickrup_previews']);
     $file->fid = $key;
     flickrup_validate_picture($file, 'flickrfile');
