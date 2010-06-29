@@ -36,56 +36,61 @@ function flickrup_help($path, $arg) {
 /**
  * Implementation of hook_menu().
  */
-function flickrup_menu($may_cache) {
+function flickrup_menu() {
   global $user;
   
   $items = array();
-  if ($may_cache) {
-    $items[] = array(
-      'path' => 'admin/settings/flickrup', 'title' => t('Flickr Uploading'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('flickrup_admin_settings'),
-      'access' => user_access('administer site configuration'),
-      'type' => MENU_NORMAL_ITEM,
-      'description' => t('Change settings for the flickr upload module.')
-    );
-    $items[] = array(
-      'path' => 'flickrup/js',
-      'callback' => 'flickrup_js',
-      'access' => user_access('upload photos to all nodes') || user_access('upload photos to own nodes'),
-      'type' => MENU_CALLBACK,
+  $items['admin/settings/flickrup'] = array(
+    'title' => 'Flickr Uploading',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('flickrup_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'description' => 'Change settings for the flickr upload module.'
+  );
+  $items['flickrup/js'] = array(
+    'paeg callback' => 'flickrup_js',
+    'access arguments' => array('upload photos to all nodes', 'upload photos to own nodes'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // Testing
+  /*
+  $items[] = array(
+    'path' => 'flickr/upload',
+    'title' => t('Upload to Flickr'),
+    'callback' => 'flickrup_page_upload',
+    'access' => user_access('upload photos to nodes'),
+  );
+  */
+
+  // Upload to nodes
+  
+//   if (arg(0) == 'node' && is_numeric(arg(1)) && ($node = node_load(arg(1))) && variable_get('flickr_upload_type_'.$node->type, 0)) {
+    $items['node/%/flickr'] = array(
+//     'path' => 'node/'. arg(1) .'/flickr',
+      'title' => 'Upload photos',
+      'page callback' => 'flickrup_page_node_upload',
+      'page arguments' => array(1),
+      'access callback' => 'flickrup_node_view_access',
+      'weight' => 4,
+      'type' => MENU_LOCAL_TASK
     );
     
-    // Testing
-    /*
-    $items[] = array(
-      'path' => 'flickr/upload',
-      'title' => t('Upload to Flickr'),
-      'callback' => 'flickrup_page_upload',
-      'access' => user_access('upload photos to nodes'),
-    );
-    */
-  } else {
-    // Upload to nodes
-    if (arg(0) == 'node' && is_numeric(arg(1)) && ($node = node_load(arg(1))) && variable_get('flickr_upload_type_'.$node->type, 0)) {
-      $items[] = array('path' => 'node/'. arg(1) .'/flickr', 'title' => t('Upload photos'),
-        'callback' => 'flickrup_page_node_upload',
+    if (variable_get('flickr_node_view', 'tab') == 'tab') {
+      $items['node/%/photos'] = array(
+//       'path' => 'node/'. arg(1) .'/photos',
+        'title' => 'Photos',
+        'callback' => 'flickrup_page_node_view',
         'callback arguments' => array($node),
-        'access' => user_access('upload photos to all nodes') || ($node->uid == $user->uid && user_access('upload photos to own nodes')),
-        'weight' => 4,
+        'access' => user_access('access content'),
+        'weight' => 2,
         'type' => MENU_LOCAL_TASK
       );
-      if (variable_get('flickr_node_view', 'tab') == 'tab') {
-        $items[] = array('path' => 'node/'. arg(1) .'/photos', 'title' => t('Photos'),
-          'callback' => 'flickrup_page_node_view',
-          'callback arguments' => array($node),
-          'access' => user_access('access content'),
-          'weight' => 2,
-          'type' => MENU_LOCAL_TASK
-        );
-      }
     }
-  }
+//   }
+
+
   return $items;
 }
 
