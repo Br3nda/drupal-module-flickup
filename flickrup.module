@@ -328,7 +328,8 @@ function theme_flickrup_node_photos($node, $width = 480, $height = 480) {
 /**
  * Menu callback. Upload photos to node
  */
-function flickrup_page_node_upload($node) {
+function flickrup_page_node_upload($nid) {
+  $node = node_load(array('nid' => $nid));
   drupal_set_title(t('Upload photos for %title', array('%title' => $node->title)));
   $output = '';
   // Get tags for this node type
