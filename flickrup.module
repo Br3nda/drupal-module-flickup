@@ -18,13 +18,14 @@
 function flickrup_help($path, $arg) {
   switch ($path) {
     case 'admin/help#flickrup':
-      $output = '<p>'.t('Flickr Upload module features:').'</p><ul>';
+      $output = '<p>'. t('Flickr Upload module features:').'</p><ul>';
 
-      
-      $output .= '<li>'.t('Allows uploading images to Flickr from your site.').'</li>';
-      $output .= '<li>'.t('Images can be linked to nodes using per content type settings.').'</li>';
-      $ouptut .= '<li>'.t('Tags can be configured globally or using node parameters.').'</li>';
-      $output .= '</ul>';
+      $items = array(
+        t('Allows uploading images to Flickr from your site.'),
+        t('Images can be linked to nodes using per content type settings.'),
+        t('Tags can be configured globally or using node parameters.'),
+      );
+      $output .= theme('item_list', $item);
 
       
       $output .= '<p>'.t('The images are uploaded first to the web server, then from there to your Flickr account. This may have some important performance impact on the web server, so please review carefully the module settings for production servers.').'</p>';
@@ -190,6 +191,7 @@ function flickrup_perm() {
  * Implementation of hook_form_alter()
  */
 function flickrup_form_alter($form_id, &$form) {
+drupal_set_message(__FUNCTION__);
   if (isset($form['type'])) {
     if ($form['type']['#value'] .'_node_form' == $form_id) {
       $type = content_types($form['type']['#value']);
@@ -219,7 +221,7 @@ function flickrup_form_alter($form_id, &$form) {
     $form['workflow']['flickr']['flickr_upload_type'] = array(
       '#type' => 'radios',
       '#title' => t('Enable Flickr upload'),
-      '#default_value' => variable_get('flickr_upload_type_'.$type, 0),
+      '#default_value' => variable_get('flickr_upload_type_'. $type, 0),
       '#options' => array(t('Disabled'), t('Enabled')),
       '#description' => t('Upload photos to Flickr for this content.'),
     );
@@ -308,9 +310,12 @@ function flickrup_node_variables_location($op, $param) {
  * Show flickr images for this content
  */
 function flickrup_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
+  drupal_set_message(__FUNCTION__ . ', op = '. $op);
+  
   switch ($op) {
     case 'view';
-      if (variable_get('flickr_upload_type_'.$node->type, 0) && variable_get('flickr_node_view', 'tab') == 'body') {
+      drupal_set_message("looking for " . variable_get('flickr_upload_type_'.$node->type, 0));
+      if (variable_get('flickr_upload_type_'. $node->type, 0) && variable_get('flickr_node_view', 'tab') == 'body') {
         $node->content['photos'] = array(
           '#value' => theme('flickrup_node_photos', $node),
           '#weight' => 100,
@@ -499,14 +504,16 @@ function theme_flickrup_image_preview($file, $width = 200, $height = 200) {
 /**
  * Form callback. Validation
  */
-function flickrup_upload_form_validate($form_id, $values) {
+function flickrup_upload_form_validate($form, &$form_state) {
+  drupal_set_message(__FUNCTION__ .' .. TODO, convert to D6');
   global $form_values;
 
   // Check for uploaded images.
   $upload = FALSE;
+  drupal_set_message(nl2br(print_r($_SESSION, 1)));
   
   // Set previously uploaded files into form values
-  if (!empty($_SESSION['flickr_upload'])) {
+  if (is_array($_SESSION['flickr_upload'])) {
     $upload = TRUE;
     $form_values['files'] = $_SESSION['flickr_upload'];
   }
