@@ -190,8 +190,10 @@ function flickrup_perm() {
 /**
  * Implementation of hook_form_alter()
  */
-function flickrup_form_alter($form_id, &$form) {
-drupal_set_message(__FUNCTION__);
+function flickrup_form_alter(&$form, &$form_state, $form_id) {
+//   drupal_set_message(__FUNCTION__);
+//   drupal_set_message(print_r($form_id, 1));
+
   if (isset($form['type'])) {
     if ($form['type']['#value'] .'_node_form' == $form_id) {
       $type = content_types($form['type']['#value']);
@@ -310,11 +312,11 @@ function flickrup_node_variables_location($op, $param) {
  * Show flickr images for this content
  */
 function flickrup_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
-  drupal_set_message(__FUNCTION__ . ', op = '. $op);
+//   drupal_set_message(__FUNCTION__ . ', op = '. $op);
   
   switch ($op) {
     case 'view';
-      drupal_set_message("looking for " . variable_get('flickr_upload_type_'.$node->type, 0));
+//       drupal_set_message("looking for " . variable_get('flickr_upload_type_'.$node->type, 0));
       if (variable_get('flickr_upload_type_'. $node->type, 0) && variable_get('flickr_node_view', 'tab') == 'body') {
         $node->content['photos'] = array(
           '#value' => theme('flickrup_node_photos', $node),
