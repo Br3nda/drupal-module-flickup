@@ -321,9 +321,7 @@ function flickrup_page_upload($op = '') {
 }
 
 function flickrup_page_upload_done($tags) {
-  $output = '';
-  $output .= 'Not implemented';
-  return $output;
+  return t('Not implemented');
 }
 
 /**
