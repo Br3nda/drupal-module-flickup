@@ -62,7 +62,7 @@ function flickrup_menu() {
   $items['user/%/flickrup'] = array(
     'title' => 'Flickr Uploading',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('flickrup_user_settings'),
+    'page arguments' => array('flickrup_user_settings', 1),
     'access arguments' => array('Upload to Flickr'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'flickrup.user.inc',
