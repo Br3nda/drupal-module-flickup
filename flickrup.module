@@ -293,10 +293,8 @@ function flickrup_page_node_upload($nid) {
  */
 function flickrup_page_node_view($node) {
   drupal_set_title(t('Photos for %title', array('%title' => $node->title)));
-  $output = '';
-  $output .= theme('flickrup_node_photos', $node);
+  return theme('flickrup_node_photos', $node);
 
-  return $output;
 }
 /**
  * 
