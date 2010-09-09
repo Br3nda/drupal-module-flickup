@@ -3,4 +3,4 @@ description = Flickr uploading API and forms.
 package = Flickr
 core = 6.x
 dependencies[] = flickrapi
-;dependencies[] = flickrfield
+dependencies[] = cck
