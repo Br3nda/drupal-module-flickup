@@ -1,4 +1,3 @@
-; $Id: flickrup.info,v 1.3 2010/06/29 04:53:02 taniwha Exp $
 name = Flickr Upload
 description = Flickr uploading API and forms.
 package = Flickr
