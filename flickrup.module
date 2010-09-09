@@ -18,7 +18,7 @@
 function flickrup_help($path, $arg) {
   switch ($path) {
     case 'admin/help#flickrup':
-      $output = '<p>'. t('Flickr Upload module features:').'</p><ul>';
+      $output = '<p>'. t('Flickr Upload module features:') .'</p>';
 
       $items = array(
         t('Allows uploading images to Flickr from your site.'),
@@ -27,11 +27,11 @@ function flickrup_help($path, $arg) {
       );
       $output .= theme('item_list', $item);
 
-      $output .= '<p>'.t('The images are uploaded first to the web server, then from there to your Flickr account. This may have some important performance impact on the web server, so please review carefully the module settings for production servers.').'</p>';
-      $output .= '<p><small>'.t('This module uses <a href="http://phpflickr.com/">phpFlickr</a> to interact with the Flickr API.').'</small></p>';
+      $output .= '<p>'. t('The images are uploaded first to the web server, then from there to your Flickr account. This may have some important performance impact on the web server, so please review carefully the module settings for production servers.') .'</p>';
+      $output .= '<p><small>'. t('This module uses <a href="http://phpflickr.com/">phpFlickr</a> to interact with the Flickr API.') .'</small></p>';
       return $output;
     case 'admin/settings/flickrup':
-      $output = '<p>'.t('In adition to your normal flickr settings this module needs a Flickr authentication token with write permissions for your account. If you don\'t know how to get one, <a href="http://phpflickr.com/tools/auth/" >follow the steps here</a>.').'</p>';
+      $output = '<p>'. t('In adition to your normal flickr settings this module needs a Flickr authentication token with write permissions for your account. If you don\'t know how to get one, <a href="http://phpflickr.com/tools/auth/" >follow the steps here</a>.') .'</p>';
       return $output;
   }
 
@@ -142,9 +142,9 @@ function flickrup_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'node_type_form' && isset($form['identity']['type'])) {
     $type = $form['#node_type']->type;
     
-    $description = '<p>' . t('Some variables you can use in your tags are:').'</p>';
+    $description = '<p>' . t('Some variables you can use in your tags are:') .'</p>';
     foreach (flickrup_node_variables('list', $type) as $key => $name) {
-      $items[] = '<strong>'.$key.'</strong> - '.$name;
+      $items[] = '<strong>'. check_plain($key) .'</strong> - '. check_plain($name);
     }   
     $description .= theme('item_list', $items);    
     $form['workflow']['flickr'] = array(
@@ -162,13 +162,13 @@ function flickrup_form_alter(&$form, &$form_state, $form_id) {
     $form['workflow']['flickr']['flickr_upload_tag'] = array(
       '#type' => 'textfield',
       '#title' => t('Automatic Upload tags'),
-      '#default_value' => variable_get('flickr_upload_tag_'.$type, ''),
+      '#default_value' => variable_get('flickr_upload_tag_'. $type, ''),
       '#description' => t('Tags for this content type separated by spaces') ,
     );
     $form['workflow']['flickr']['flickr_display_tag'] = array(
       '#type' => 'textfield',
       '#title' => t('Tags for display'),
-      '#default_value' => variable_get('flickr_display_tag_'.$type, variable_get('flickr_upload_tag_'.$type, '')),
+      '#default_value' => variable_get('flickr_display_tag_'. $type, variable_get('flickr_upload_tag_'. $type, '')),
       '#description' => t('Tags that will be used for node display. They will default to upload tags.') ,
     );
   }  
@@ -358,8 +358,8 @@ function flickrup_upload_form($params = array()) {
     '#title' => t('Upload pictures'), 
     '#description' => t('Maximum dimensions are %dimensions and the maximum size is %size kB.', array('%dimensions' => variable_get('flickr_picture_dimensions', '800x600'), '%size' => variable_get('flickr_picture_file_size', '1000')))
   );
-  for($i=1; $i<= variable_get('flickr_upload_fields', 1); $i++) {
-    $field = 'upload'.$i;
+  for ($i=1; $i<= variable_get('flickr_upload_fields', 1); $i++) {
+    $field = 'upload'. $i;
     // There may be uploaded images waiting in the session object. These will override
     // the upload fields using hook_after build
     $form['images'][$field] = array(
@@ -396,8 +396,9 @@ function theme_flickrup_upload_form($form) {
       $form['images'][$field]['#type'] = 'item';
       $form['images'][$field]['#value'] = theme('flickrup_image_preview', $file);      
     }
-  } else {
-    unset ($form['reset']);
+  } 
+  else {
+    unset($form['reset']);
   }
   
   return drupal_render($form);
@@ -425,7 +426,8 @@ function theme_flickrup_image_preview($file, $width = 200, $height = 200) {
     $src = file_create_url($file->filepath);
     $output .= "<img src=\"$src\"  width=$width height =$height />";
 
-  } else {
+  } 
+  else {
     $output .= t('No image preview');
   }
   $output .= '</div>';
@@ -448,8 +450,8 @@ function flickrup_upload_form_validate($form, &$form_state) {
     $form_values['files'] = $_SESSION['flickr_upload'];
   }
 
-  for($i=1; $i<= variable_get('flickr_upload_fields', 1); $i++) {
-    $field = 'upload'.$i;
+  for ($i=1; $i<= variable_get('flickr_upload_fields', 1); $i++) {
+    $field = 'upload'. $i;
     if ($file = file_save_upload($field)) {
       $upload = TRUE;
       flickrup_validate_picture($file, $field);
@@ -483,20 +485,20 @@ function flickrup_validate_picture($file, $field = 'upload') {
     $error = TRUE;
     form_set_error($field, t('The uploaded file was not an image.'));
   }
-  else if (image_get_toolkit()) {
+  elseif (image_get_toolkit()) {
     image_scale($file->filepath, $file->filepath, $maxwidth, $maxheight);
   }
-  else if (filesize($file->filepath) > (variable_get('user_picture_file_size', '1000') * 1000)) {
+  elseif (filesize($file->filepath) > (variable_get('user_picture_file_size', '1000') * 1000)) {
     $error = TRUE;
     form_set_error($field, t('The uploaded image is too large; the maximum file size is %size kB.', array('%size' => variable_get('user_picture_file_size', '30'))));
   }
-  else if ($info['width'] > $maxwidth || $info['height'] > $maxheight) {
+  elseif ($info['width'] > $maxwidth || $info['height'] > $maxheight) {
     $error = TRUE;
     form_set_error($field, t('The uploaded image is too large; the maximum dimensions are %dimensions pixels.', array('%dimensions' => variable_get('user_picture_dimensions', '85x85'))));
   }
 
   if (!$error) {
-    if ($file = file_save_upload($file, variable_get('flickr_picture_path', 'flickr').'/'.$file->filename, FILE_EXISTS_RENAME)) {
+    if ($file = file_save_upload($file, variable_get('flickr_picture_path', 'flickr') .'/'. $file->filename, FILE_EXISTS_RENAME)) {
       $form_values['files'][$field] = $file;
       // Store in session until it has been uploaded to flickr
       $_SESSION['flickr_upload'][$field] = $file;
@@ -515,12 +517,13 @@ function flickrup_upload_form_submit($form_id, $form_values) {
 
   // Reset option for deleting preloaded images
   if ($op == t('Reset')) {
-    foreach($form_values['files'] as $index => $file) {
+    foreach ($form_values['files'] as $index => $file) {
       file_delete($file->filepath);
     }
     unset($_SESSION['flickr_upload']);
     drupal_set_message(t('The saved images have been deleted.'));
-  } else {
+  } 
+  else {
     // Image submission to Flickr
     foreach (array('fixed_tags', 'custom_tags') as $field) {
       if (!empty($form_values[$field])) {
@@ -534,7 +537,8 @@ function flickrup_upload_form_submit($form_id, $form_values) {
           $uploads++;
           // Delete files that may be stored in session
           unset($_SESSION['flickr_upload'][$index]);
-        } else {
+        } 
+        else {
           $errors++;
         }
       }
@@ -544,7 +548,8 @@ function flickrup_upload_form_submit($form_id, $form_values) {
       if ($errors) {
         drupal_set_message(t('Flickr Upload error with %images. The images have been stored in our local server though so you won\'t need to upload them again.', array('%images' => format_plural($uploads, '@count image', '@count images'))));
       }
-    } else {
+    } 
+    else {
       drupal_set_message(t('Drupal upload error. Please try again later or contact the site administrator.'), 'error');
     }
   }
@@ -564,8 +569,8 @@ function flickrup_node_tags($node, $display = FALSE) {
     $tags = array_merge($tags, explode(' ', $tag));
   }
   // Node display/upload tags
-  $tag = variable_get('flickr_upload_tag_'.$node->type, '');
-  $tag = $display ? variable_get('flickr_display_tag_'.$node->type, $tag): $tag;
+  $tag = variable_get('flickr_upload_tag_'. $node->type, '');
+  $tag = $display ? variable_get('flickr_display_tag_'. $node->type, $tag): $tag;
   if ($tag) {
     // Apply variables to placeholders
     if ($placeholders = flickrup_node_variables('values', $node)) {
@@ -586,7 +591,7 @@ function flickrup_upload($path, $title = '', $tags = array(), $description = '')
   static $flickr; // Static caching for the flickr object to support multiple uploads
   
   if (!isset($flickr)) {
-    require_once drupal_get_path('module', 'flickrup').'/phpFlickr/phpFlickr.php';
+    require_once drupal_get_path('module', 'flickrup') .'/phpFlickr/phpFlickr.php';
     // Create the class with auth parameters
     $flickr = new phpFlickr(trim(variable_get('flickr_api_key', '')), trim(variable_get('flickr_api_secret', '')));
     $flickr->setToken(trim(variable_get('flickr_api_token', '')));
@@ -602,7 +607,8 @@ function flickrup_upload($path, $title = '', $tags = array(), $description = '')
     $result = $flickr->async_upload($path, $title, $description, $tagstring, variable_get('flickr_upload_public', 1), 0, 0);    
     // We asume success if no error code. The upload may still be going though
     $success = $flickr->getErrorCode() ? FALSE : TRUE;
-  } else {
+  } 
+  else {
     $result = $flickr->sync_upload($path, $title, $description, $tagstring, variable_get('flickr_upload_public', 1), 0, 0);
     $success = $result;
   }
@@ -618,7 +624,8 @@ function flickrup_upload($path, $title = '', $tags = array(), $description = '')
     if (!$async && variable_get('flickr_upload_delete', 0)) {
       file_delete($path);
     }
-  } else { // Failure
+  } 
+  else { // Failure
     $variables += array(
     '!error-code' => $flickr->getErrorCode(),
     '!error-message' => $flickr->getErrorMsg(),    
@@ -643,14 +650,14 @@ function flickrup_cleanstring($string) {
     "with"
   );
 
-  static $i18n_loaded = false;
+  static $i18n_loaded = FALSE;
   static $translations = array();
   if (!$i18n_loaded) {
     $path = drupal_get_path('module', 'pathauto');
-    if (is_file($path. '/i18n-ascii.txt')) {
-      $translations = parse_ini_file($path. '/i18n-ascii.txt');
+    if (is_file($path .'/i18n-ascii.txt')) {
+      $translations = parse_ini_file($path .'/i18n-ascii.txt');
     }
-    $i18n_loaded = true;
+    $i18n_loaded = TRUE;
   }
 
   $output = strtr($output, $translations);
@@ -689,7 +696,7 @@ function flickrup_cleanstring($string) {
       $seppattern = $separator;
     } 
     else {
-      $seppattern = '\\'.$separator;
+      $seppattern = '\\'. $separator;
     }
     $output = preg_replace("/^$seppattern+|$seppattern+$/", "", $output);
   }
@@ -888,7 +895,7 @@ function theme_flickrup_form_current($form) {
 function _flickrup_prepare(&$node, $field, &$items) {
   $fieldname = $field['field_name'];
   // Clear session variable and files that were leftover from previous uploading session
-  if(count($_POST) == 0) {
+  if (count($_POST) == 0) {
     if (is_array($_SESSION['flickrup_previews']) && count($_SESSION['flickrup_previews'])) {
       foreach ($_SESSION['flickrup_previews'] as $file) {
         file_delete($file->filepath);
@@ -966,7 +973,7 @@ function flickrup_js() {
 
 function flickrup_flickrapi() {
   static $flickr;
-  require_once drupal_get_path('module', 'flickrup').'/phpFlickr/phpFlickr.php';
+  require_once drupal_get_path('module', 'flickrup') .'/phpFlickr/phpFlickr.php';
 
   if (!$flickr) {
     $flickr = new phpFlickr(trim(variable_get('flickr_api_key', '')), trim(variable_get('flickr_api_secret', '')));
