@@ -30,6 +30,7 @@ function flickrup_help($path, $arg) {
       $output .= '<p>'. t('The images are uploaded first to the web server, then from there to your Flickr account. This may have some important performance impact on the web server, so please review carefully the module settings for production servers.') .'</p>';
       $output .= '<p><small>'. t('This module uses <a href="http://phpflickr.com/">phpFlickr</a> to interact with the Flickr API.') .'</small></p>';
       return $output;
+
     case 'admin/settings/flickrup':
       $output = '<p>'. t('In adition to your normal flickr settings this module needs a Flickr authentication token with write permissions for your account. If you don\'t know how to get one, <a href="http://phpflickr.com/tools/auth/" >follow the steps here</a>.') .'</p>';
       return $output;
@@ -123,9 +124,8 @@ function flickrup_perm() {
  * Implementation of hook_form_alter()
  */
 function flickrup_form_alter(&$form, &$form_state, $form_id) {
-//   drupal_set_message(__FUNCTION__);
-//   drupal_set_message(print_r($form_id, 1));
 
+  
   if (isset($form['type'])) {
     if ($form['type']['#value'] .'_node_form' == $form_id) {
       $type = content_types($form['type']['#value']);
@@ -139,6 +139,7 @@ function flickrup_form_alter(&$form, &$form_state, $form_id) {
     }
   }
   
+  //add stuff to the node types editin form
   if ($form_id == 'node_type_form' && isset($form['identity']['type'])) {
     $type = $form['#node_type']->type;
     
@@ -177,8 +178,7 @@ function flickrup_form_alter(&$form, &$form_state, $form_id) {
 /**
  * Node variables
  */
- 
-function flickrup_node_variables($op, $param) {
+ function flickrup_node_variables($op, $param) {
   switch ($op) {
     case 'list': // Param is node type
       $variables = array(
