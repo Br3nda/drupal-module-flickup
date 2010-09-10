@@ -55,13 +55,13 @@ function flickrup_admin_settings() {
   file_check_directory($picture_path, 1, 'flickr_picture_path');
   
   // Image file settings
-  $form['pictures'] = array('#type' => 'fieldset', '#title' => t('Pictures'));
+  $form['pictures'] = array('#type' => 'fieldset', '#title' => t('Photos'));
   
-  $form['pictures']['flickr_picture_path'] = array('#type' => 'textfield', '#title' => t('Picture image path'), '#default_value' => variable_get('flickr_picture_path', 'flickr'), '#size' => 30, '#maxlength' => 255, '#description' => t('Subdirectory in the directory %dir where pictures will be stored.', array('%dir' => file_directory_path() .'/')));
+  $form['pictures']['flickr_picture_path'] = array('#type' => 'textfield', '#title' => t('Photo image path'), '#default_value' => variable_get('flickr_picture_path', 'flickr'), '#size' => 30, '#maxlength' => 255, '#description' => t('Subdirectory in the directory %dir where pictures will be stored.', array('%dir' => file_directory_path() .'/')));
   
-  $form['pictures']['flickr_picture_dimensions'] = array('#type' => 'textfield', '#title' => t('Picture maximum dimensions'), '#default_value' => variable_get('flickr_picture_dimensions', '800x600'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum dimensions for pictures, in pixels.'));
+  $form['pictures']['flickr_picture_dimensions'] = array('#type' => 'textfield', '#title' => t('Photo maximum dimensions'), '#default_value' => variable_get('flickr_picture_dimensions', '800x600'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum dimensions for pictures, in pixels.'));
   
-  $form['pictures']['flickr_picture_file_size'] = array('#type' => 'textfield', '#title' => t('Picture maximum file size'), '#default_value' => variable_get('flickr_picture_file_size', '1000'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum file size for pictures, in kB.'));
+  $form['pictures']['flickr_picture_file_size'] = array('#type' => 'textfield', '#title' => t('Photo maximum file size'), '#default_value' => variable_get('flickr_picture_file_size', '1000'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum file size for pictures, in kB.'));
  
   $form['flickr_node_view'] = array(
     '#type' => 'radios',
