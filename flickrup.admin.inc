@@ -57,7 +57,13 @@ function flickrup_admin_settings() {
   // Image file settings
   $form['photos'] = array('#type' => 'fieldset', '#title' => t('Photos'));
   
-  $form['photos']['flickr_picture_path'] = array('#type' => 'textfield', '#title' => t('Photo image path'), '#default_value' => variable_get('flickr_picture_path', 'flickr'), '#size' => 30, '#maxlength' => 255, '#description' => t('Subdirectory in the directory %dir where pictures will be stored.', array('%dir' => file_directory_path() .'/')));
+  $form['photos']['flickr_picture_path'] = array(
+    '#type' => 'textfield', '#title' => t('Photo image path'), 
+    '#default_value' => variable_get('flickr_picture_path', 'flickr'), 
+    '#size' => 30, '#maxlength' => 255, 
+    '#description' => t('Subdirectory in the directory %dir where pictures will be stored.', array('%dir' => file_directory_path() .'/')),
+    '#required' => TRUE,
+  );
   
   $form['photos']['flickr_picture_dimensions'] = array('#type' => 'textfield', '#title' => t('Photo maximum dimensions'), '#default_value' => variable_get('flickr_picture_dimensions', '800x600'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum dimensions for pictures, in pixels.'));
   
@@ -84,5 +90,9 @@ function flickrup_admin_settings_validate($form_id, $form_state) {
 
   if (!is_numeric($form_state['values']['flickr_picture_file_size'])) {
     form_set_error('flickr_picture_file_size', t('Maximum file size must be a number.'));
+  }
+
+  if (!file_check_directory($form_state['values']['flickr_picture_path'])) {
+    form_set_error('flickr_picture_path', t('Path does no exist'));
   }
 }
