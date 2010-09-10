@@ -55,13 +55,13 @@ function flickrup_admin_settings() {
   file_check_directory($picture_path, 1, 'flickr_picture_path');
   
   // Image file settings
-  $form['pictures'] = array('#type' => 'fieldset', '#title' => t('Photos'));
+  $form['photos'] = array('#type' => 'fieldset', '#title' => t('Photos'));
   
-  $form['pictures']['flickr_picture_path'] = array('#type' => 'textfield', '#title' => t('Photo image path'), '#default_value' => variable_get('flickr_picture_path', 'flickr'), '#size' => 30, '#maxlength' => 255, '#description' => t('Subdirectory in the directory %dir where pictures will be stored.', array('%dir' => file_directory_path() .'/')));
+  $form['photos']['flickr_picture_path'] = array('#type' => 'textfield', '#title' => t('Photo image path'), '#default_value' => variable_get('flickr_picture_path', 'flickr'), '#size' => 30, '#maxlength' => 255, '#description' => t('Subdirectory in the directory %dir where pictures will be stored.', array('%dir' => file_directory_path() .'/')));
   
-  $form['pictures']['flickr_picture_dimensions'] = array('#type' => 'textfield', '#title' => t('Photo maximum dimensions'), '#default_value' => variable_get('flickr_picture_dimensions', '800x600'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum dimensions for pictures, in pixels.'));
+  $form['photos']['flickr_picture_dimensions'] = array('#type' => 'textfield', '#title' => t('Photo maximum dimensions'), '#default_value' => variable_get('flickr_picture_dimensions', '800x600'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum dimensions for pictures, in pixels.'));
   
-  $form['pictures']['flickr_picture_file_size'] = array('#type' => 'textfield', '#title' => t('Photo maximum file size'), '#default_value' => variable_get('flickr_picture_file_size', '1000'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum file size for pictures, in kB.'));
+  $form['photos']['flickr_picture_file_size'] = array('#type' => 'textfield', '#title' => t('Photo maximum file size'), '#default_value' => variable_get('flickr_picture_file_size', '1000'), '#size' => 15, '#maxlength' => 10, '#description' => t('Maximum file size for pictures, in kB.'));
  
   $form['flickr_node_view'] = array(
     '#type' => 'radios',
@@ -75,4 +75,14 @@ function flickrup_admin_settings() {
     '#description' => t('Select whether you want to display images with the content they were uploaded for.'),
   );
   return system_settings_form($form);  
+}
+
+function flickrup_admin_settings_validate($form_id, $form_state) {
+  if (!preg_match('!^[0-9]+x[0-9]+$!', $form_state['values']['flickr_picture_dimensions'])) {
+    form_set_error('flickr_picture_dimensions', t('This must be a in the format of NNxNN, e.g. 800x600'));
+  }
+
+  if (!is_numeric($form_state['values']['flickr_picture_file_size'])) {
+    form_set_error('flickr_picture_file_size', t('Maximum file size must be a number.'));
+  }
 }
