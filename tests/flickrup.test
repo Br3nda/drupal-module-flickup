@@ -4,7 +4,8 @@ class FlickrUpTest extends DrupalWebTestCase {
   /**
    * User with rights to post SimpleTest Example content.
    */
-  protected $privileged_user;
+  protected $admin_user;
+  protected $normal_user;
   protected $apikey = '1611f2ad417e2276c05fa279654cc0e8';
   protected $flickrusername = 'Flickr Rippr';
   protected $nsid = '54551252@N03';
