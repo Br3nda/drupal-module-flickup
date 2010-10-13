@@ -24,8 +24,8 @@ class FlickrUpTest extends DrupalWebTestCase {
     // Enable any modules required for the test.
     parent::setUp('flickrup', 'flickrapi');
 
-    $this->admin_user = $this->drupalCreateUser( array('administer site configuration'));
-    $this->normal_user = $this->drupalCreateUser( array('Upload Flickr Photos'));
+    $this->admin_user = $this->drupalCreateUser( array('administer site configuration', 'upload photos to all nodes'));
+    $this->normal_user = $this->drupalCreateUser( array('upload photos to own nodes'));
   }
 
   function testConfiguringModule() {
