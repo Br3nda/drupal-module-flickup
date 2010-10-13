@@ -1,5 +1,14 @@
 <?php
 class FlickrUpTest extends DrupalWebTestCase {
+
+  /**
+   * User with rights to post SimpleTest Example content.
+   */
+  protected $privileged_user;
+  protected $apikey = '1611f2ad417e2276c05fa279654cc0e8';
+  protected $flickrusername = 'Flickr Rippr';
+  protected $nsid = '54551252@N03';
+
   /**
    * getInfo() returns properties that are displayed in the test selection form.
    */
@@ -14,7 +23,7 @@ class FlickrUpTest extends DrupalWebTestCase {
     // Enable any modules required for the test.
     parent::setUp('flickrup', 'flickrapi');
 
-    $this->admin_user = $this->drupalCreateUser( array('Administer global flickr api settings', 'administer site configuration'));
+    $this->admin_user = $this->drupalCreateUser( array('administer site configuration'));
     $this->normal_user = $this->drupalCreateUser( array('Upload Flickr Photos'));
   }
 
